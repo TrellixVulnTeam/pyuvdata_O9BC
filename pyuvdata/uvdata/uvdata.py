@@ -8417,6 +8417,7 @@ class UVData(UVBase):
         lst_range,
         polarizations,
         blt_inds,
+        catalog_identifier,
     ):
         """
         Build up blt_inds, freq_inds, pol_inds and history_update_string for select.
@@ -8486,6 +8487,11 @@ class UVData(UVBase):
         blt_inds : array_like of int, optional
             The baseline-time indices to keep in the object. This is
             not commonly used.
+        sources : str or list of str, optional
+            Names of the phase centers to keep in the object, matched against entries
+            in the phase center catalog ("cat_name").
+        cat_ids : array_like of int, optional
+            ID numbers of phase centers to keep.
 
         Returns
         -------
@@ -8794,6 +8800,49 @@ class UVData(UVBase):
                     f"No elements in LST range between {lst_range[0]} and "
                     f"{lst_range[1]}."
                 )
+
+        if catalog_identifier is not None:
+            cat_ids = set()
+            if isinstance(catalog_identifier, (int, str)):
+                catalog_identifier = [catalog_identifier]
+
+            for item in catalog_identifier:
+                if isinstance(item, str):
+                    temp_ids = []
+                    for key, pc_dict in self.phase_center_catalog.items():
+                        if item == pc_dict["cat_name"]:
+                            temp_ids.append(key)
+                    if len(temp_ids) == 0:
+                        raise ValueError(
+                            "No catalog entries matching the name %s." % item
+                        )
+                    cat_ids |= set(temp_ids)
+                elif isinstance(item, int):
+                    if item not in self.phase_center_catalog:
+                        raise ValueError(
+                            "No catalog entry with the source ID %i." % item
+                        )
+                    cat_ids |= {item}
+            # Need to cast back to a list here for isin to work correctly.
+            sou_blt_inds = np.where(np.isin(self.phase_center_id_array, list(cat_ids)))[
+                0
+            ]
+            if time_blt_inds.size == 0:
+                raise ValueError("No entries matching provided catalog identifiers.")
+            if blt_inds is not None:
+                # Use intesection (and) to join
+                # antenna_names/nums/ant_pairs_nums/blt_inds with times
+                blt_inds = np.array(
+                    list(set(blt_inds).intersection(sou_blt_inds)), dtype=np.int64
+                )
+            else:
+                blt_inds = sou_blt_inds
+
+            if n_selects > 0:
+                history_update_string += ", phase centers"
+            else:
+                history_update_string += "phase centers"
+            n_selects += 1
 
         if times is not None or time_range is not None:
             if n_selects > 0:
@@ -9106,6 +9155,7 @@ class UVData(UVBase):
         lst_range=None,
         polarizations=None,
         blt_inds=None,
+        catalog_identifier=None,
         inplace=True,
         keep_all_metadata=True,
         run_check=True,
@@ -9244,6 +9294,7 @@ class UVData(UVBase):
             lst_range,
             polarizations,
             blt_inds,
+            catalog_identifier,
         )
 
         # Call the low-level selection method.
@@ -10780,11 +10831,24 @@ class UVData(UVBase):
     def read_mir(
         self,
         filepath,
-        isource=None,
-        irec=None,
-        isb=None,
+        mir_select_where=None,
+        antenna_nums=None,
+        antenna_names=None,
+        bls=None,
+        times=None,
+        time_range=None,
+        lsts=None,
+        lst_range=None,
+        polarizations=None,
+        catalog_identifier=None,
         corrchunk=None,
+        receivers=None,
+        sidebands=None,
+        apply_tsys=True,
+        apply_flags=True,
+        apply_dedoppler=False,
         pseudo_cont=False,
+        rechunk=None,
         run_check=True,
         check_extra=True,
         run_check_acceptability=True,
@@ -10792,7 +10856,6 @@ class UVData(UVBase):
         allow_flex_pol=True,
         check_autos=True,
         fix_autos=True,
-        rechunk=None,
     ):
         """
         Read in data from an SMA MIR file.
@@ -10804,14 +10867,6 @@ class UVData(UVBase):
         ----------
         filepath : str
              The file path to the MIR folder to read from.
-        isource : int
-            Source code for MIR dataset. The default is None, which selects all sources.
-        irec : int
-            Receiver code for MIR dataset. The default is None, which selects all
-            receivers.
-        isb : int
-            Sideband code for MIR dataset. The default is None, which selects both
-            sidebands.
         corrchunk : int
             Correlator chunk code for MIR dataset. The default is None, which selects
             all chunks.
@@ -10850,11 +10905,24 @@ class UVData(UVBase):
         mir_obj = mir.Mir()
         mir_obj.read_mir(
             filepath,
-            isource=isource,
-            irec=irec,
-            isb=isb,
+            select_where=mir_select_where,
+            antenna_nums=antenna_nums,
+            antenna_names=antenna_names,
+            bls=bls,
+            times=times,
+            time_range=time_range,
+            lsts=lsts,
+            lst_range=lst_range,
+            polarizations=polarizations,
+            sources=catalog_identifier,
             corrchunk=corrchunk,
+            receivers=receivers,
+            sidebands=sidebands,
+            apply_tsys=apply_tsys,
+            apply_flags=apply_flags,
+            apply_dedoppler=apply_dedoppler,
             pseudo_cont=pseudo_cont,
+            rechunk=rechunk,
             run_check=run_check,
             check_extra=check_extra,
             run_check_acceptability=run_check_acceptability,
@@ -10862,7 +10930,6 @@ class UVData(UVBase):
             allow_flex_pol=allow_flex_pol,
             check_autos=check_autos,
             fix_autos=fix_autos,
-            rechunk=rechunk,
         )
         self._convert_from_filetype(mir_obj)
         del mir_obj
@@ -11359,6 +11426,7 @@ class UVData(UVBase):
         lst_range=None,
         polarizations=None,
         blt_inds=None,
+        catalog_identifier=None,
         keep_all_metadata=True,
         read_data=True,
         background_lsts=True,
@@ -11519,6 +11587,7 @@ class UVData(UVBase):
             lst_range=lst_range,
             polarizations=polarizations,
             blt_inds=blt_inds,
+            catalog_identifier=catalog_identifier,
             keep_all_metadata=keep_all_metadata,
             read_data=read_data,
             background_lsts=background_lsts,
@@ -11549,6 +11618,7 @@ class UVData(UVBase):
         lst_range=None,
         polarizations=None,
         blt_inds=None,
+        catalog_identifier=None,
         keep_all_metadata=True,
         read_data=True,
         data_array_dtype=np.complex128,
@@ -11725,6 +11795,7 @@ class UVData(UVBase):
             lst_range=lst_range,
             polarizations=polarizations,
             blt_inds=blt_inds,
+            catalog_identifier=catalog_identifier,
             data_array_dtype=data_array_dtype,
             keep_all_metadata=keep_all_metadata,
             read_data=read_data,
@@ -11824,10 +11895,14 @@ class UVData(UVBase):
         phase_to_pointing_center=False,
         nsample_array_dtype=np.float32,
         # MIR
-        isource=None,
-        irec=None,
-        isb=None,
+        catalog_identifier=None,
         corrchunk=None,
+        receivers=None,
+        sidebands=None,
+        mir_select_where=None,
+        apply_tsys=True,
+        apply_flags=True,
+        apply_dedoppler=False,
         pseudo_cont=False,
         rechunk=None,
     ):
@@ -12164,12 +12239,6 @@ class UVData(UVBase):
 
         MIR
         ---
-        isource : int
-            Source code for MIR dataset.
-        irec : int
-            Receiver code for MIR dataset.
-        isb : int
-            Sideband code for MIR dataset.
         corrchunk : int
             Correlator chunk code for MIR dataset.
         pseudo_cont : boolean
@@ -12304,11 +12373,16 @@ class UVData(UVBase):
                         check_extra=check_extra,
                         run_check_acceptability=run_check_acceptability,
                         strict_uvw_antpos_check=strict_uvw_antpos_check,
-                        isource=None,
-                        irec=irec,
-                        isb=isb,
+                        catalog_identifier=catalog_identifier,
                         corrchunk=corrchunk,
+                        receivers=receivers,
+                        sidebands=sidebands,
+                        mir_select_where=mir_select_where,
+                        apply_tsys=apply_tsys,
+                        apply_flags=apply_flags,
+                        apply_dedoppler=apply_dedoppler,
                         pseudo_cont=pseudo_cont,
+                        rechunk=rechunk,
                         calc_lst=calc_lst,
                         fix_old_proj=fix_old_proj,
                         fix_use_ant_pos=fix_use_ant_pos,
@@ -12390,11 +12464,16 @@ class UVData(UVBase):
                             check_extra=check_extra,
                             run_check_acceptability=run_check_acceptability,
                             strict_uvw_antpos_check=strict_uvw_antpos_check,
-                            isource=None,
-                            irec=irec,
-                            isb=isb,
+                            catalog_identifier=catalog_identifier,
                             corrchunk=corrchunk,
+                            receivers=receivers,
+                            sidebands=sidebands,
+                            mir_select_where=mir_select_where,
+                            apply_tsys=apply_tsys,
+                            apply_flags=apply_flags,
+                            apply_dedoppler=apply_dedoppler,
                             pseudo_cont=pseudo_cont,
+                            rechunk=rechunk,
                             calc_lst=calc_lst,
                             fix_old_proj=fix_old_proj,
                             fix_use_ant_pos=fix_use_ant_pos,
@@ -12402,7 +12481,6 @@ class UVData(UVBase):
                             allow_flex_pol=allow_flex_pol,
                             check_autos=check_autos,
                             fix_autos=fix_autos,
-                            rechunk=rechunk,
                         )
                         uv_list.append(uv2)
                     except KeyError as err:
@@ -12564,6 +12642,33 @@ class UVData(UVBase):
                     select_blt_inds = blt_inds
                 else:
                     select = False
+            elif file_type in ["mir"]:
+                select = True
+                # these are all done by partial read, so set to None
+                select_antenna_nums = None
+                select_antenna_names = None
+                select_ant_str = None
+                select_bls = None
+                select_times = None
+                select_time_range = None
+                select_polarizations = None
+
+                # MIR can handle length-two bls tuples, so if any three element tuples
+                # are seen, we need to deal w/ that via select.
+                if bls is not None:
+                    select_bls = bls if any(len(item) == 3 for item in bls) else None
+
+                # these aren't supported by partial read, so do it in select
+                select_frequencies = frequencies
+                select_freq_chans = freq_chans
+                select_blt_inds = blt_inds
+
+                if all(
+                    item is None
+                    for item in [select_bls, frequencies, freq_chans, blt_inds]
+                ):
+                    # If there's nothing to select, just bypass that operation.
+                    select = False
 
             # reading a single "file". Call the appropriate file-type read
             if file_type == "uvfits":
@@ -12597,11 +12702,24 @@ class UVData(UVBase):
             elif file_type == "mir":
                 self.read_mir(
                     filename,
-                    isource=isource,
-                    irec=irec,
-                    isb=isb,
+                    mir_select_where=mir_select_where,
+                    antenna_nums=antenna_nums,
+                    antenna_names=antenna_names,
+                    bls=bls,
+                    times=times,
+                    time_range=time_range,
+                    lsts=lsts,
+                    lst_range=lst_range,
+                    polarizations=polarizations,
+                    catalog_identifier=catalog_identifier,
                     corrchunk=corrchunk,
+                    receivers=receivers,
+                    sidebands=sidebands,
+                    apply_dedoppler=apply_dedoppler,
+                    apply_tsys=apply_tsys,
+                    apply_flags=apply_flags,
                     pseudo_cont=pseudo_cont,
+                    rechunk=rechunk,
                     run_check=run_check,
                     check_extra=check_extra,
                     run_check_acceptability=run_check_acceptability,
@@ -12609,10 +12727,7 @@ class UVData(UVBase):
                     allow_flex_pol=allow_flex_pol,
                     check_autos=check_autos,
                     fix_autos=fix_autos,
-                    rechunk=rechunk,
                 )
-                select = False
-
             elif file_type == "miriad":
                 self.read_miriad(
                     filename,
@@ -12878,10 +12993,14 @@ class UVData(UVBase):
         phase_to_pointing_center=False,
         nsample_array_dtype=np.float32,
         # MIR
-        isource=None,
-        irec=None,
-        isb=None,
+        catalog_identifier=None,
         corrchunk=None,
+        receivers=None,
+        sidebands=None,
+        mir_select_where=None,
+        apply_tsys=True,
+        apply_flags=True,
+        apply_dedoppler=False,
         pseudo_cont=False,
         rechunk=None,
     ):
@@ -13326,10 +13445,14 @@ class UVData(UVBase):
             remove_flagged_ants=remove_flagged_ants,
             phase_to_pointing_center=phase_to_pointing_center,
             # MIR
-            isource=isource,
-            irec=irec,
-            isb=isb,
+            catalog_identifier=catalog_identifier,
             corrchunk=corrchunk,
+            receivers=receivers,
+            sidebands=sidebands,
+            mir_select_where=mir_select_where,
+            apply_tsys=apply_tsys,
+            apply_flags=apply_flags,
+            apply_dedoppler=apply_dedoppler,
             pseudo_cont=pseudo_cont,
             rechunk=rechunk,
         )

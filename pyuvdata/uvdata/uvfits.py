@@ -213,6 +213,7 @@ class UVFITS(UVData):
         lst_range,
         polarizations,
         blt_inds,
+        catalog_identifier,
         read_metadata,
         keep_all_metadata,
         run_check,
@@ -243,6 +244,7 @@ class UVFITS(UVData):
             lst_range,
             polarizations,
             blt_inds,
+            catalog_identifier,
         )
 
         if blt_inds is not None:
@@ -376,6 +378,7 @@ class UVFITS(UVData):
         lst_range=None,
         polarizations=None,
         blt_inds=None,
+        catalog_identifier=None,
         keep_all_metadata=True,
         read_data=True,
         background_lsts=True,
@@ -850,6 +853,7 @@ class UVFITS(UVData):
                 lst_range,
                 polarizations,
                 blt_inds,
+                catalog_identifier,
                 False,
                 keep_all_metadata,
                 run_check,
