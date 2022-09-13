@@ -159,10 +159,7 @@ class UVCal(UVBase):
             "`channel_width` parameters are not required."
         )
         self._wide_band = uvp.UVParameter(
-            "wide_band",
-            description=desc,
-            expected_type=bool,
-            value=False,
+            "wide_band", description=desc, expected_type=bool, value=False
         )
 
         self._spw_array = uvp.UVParameter(
@@ -196,10 +193,7 @@ class UVCal(UVBase):
             "Not required if future_array_shapes=True and wide_band=True."
         )
         self._channel_width = uvp.UVParameter(
-            "channel_width",
-            description=desc,
-            expected_type=float,
-            tols=1e-3,
+            "channel_width", description=desc, expected_type=float, tols=1e-3
         )  # 1 mHz
 
         desc = (
@@ -382,10 +376,7 @@ class UVCal(UVBase):
             "varying widths."
         )
         self._flex_spw = uvp.UVParameter(
-            "flex_spw",
-            description=desc,
-            expected_type=bool,
-            value=False,
+            "flex_spw", description=desc, expected_type=bool, value=False
         )
 
         desc = (
@@ -403,10 +394,7 @@ class UVCal(UVBase):
 
         desc = "Flag indicating that this object is using the future array shapes."
         self._future_array_shapes = uvp.UVParameter(
-            "future_array_shapes",
-            description=desc,
-            expected_type=bool,
-            value=False,
+            "future_array_shapes", description=desc, expected_type=bool, value=False
         )
 
         # --- cal_style parameters ---
@@ -556,10 +544,7 @@ class UVCal(UVBase):
             "input files."
         )
         self._filename = uvp.UVParameter(
-            "filename",
-            required=False,
-            description=desc,
-            expected_type=str,
+            "filename", required=False, description=desc, expected_type=str
         )
 
         super(UVCal, self).__init__()
@@ -1550,8 +1535,7 @@ class UVCal(UVBase):
 
         if run_check:
             self.check(
-                check_extra=check_extra,
-                run_check_acceptability=run_check_acceptability,
+                check_extra=check_extra, run_check_acceptability=run_check_acceptability
             )
 
     def reorder_freqs(
@@ -1706,8 +1690,7 @@ class UVCal(UVBase):
 
         if run_check:
             self.check(
-                check_extra=check_extra,
-                run_check_acceptability=run_check_acceptability,
+                check_extra=check_extra, run_check_acceptability=run_check_acceptability
             )
 
     def reorder_times(
@@ -1792,8 +1775,7 @@ class UVCal(UVBase):
 
         if run_check:
             self.check(
-                check_extra=check_extra,
-                run_check_acceptability=run_check_acceptability,
+                check_extra=check_extra, run_check_acceptability=run_check_acceptability
             )
 
     def reorder_jones(
@@ -1883,8 +1865,7 @@ class UVCal(UVBase):
 
         if run_check:
             self.check(
-                check_extra=check_extra,
-                run_check_acceptability=run_check_acceptability,
+                check_extra=check_extra, run_check_acceptability=run_check_acceptability
             )
 
     def convert_to_gain(
@@ -2104,8 +2085,7 @@ class UVCal(UVBase):
         # check if object is self-consistent
         if run_check:
             self.check(
-                check_extra=check_extra,
-                run_check_acceptability=run_check_acceptability,
+                check_extra=check_extra, run_check_acceptability=run_check_acceptability
             )
 
     def __add__(
@@ -2397,13 +2377,7 @@ class UVCal(UVBase):
                         )
                     )
                     zero_pad_flags = np.zeros(
-                        (
-                            len(anew_inds),
-                            1,
-                            this.Nfreqs,
-                            this.Ntimes,
-                            this.Njones,
-                        )
+                        (len(anew_inds), 1, this.Nfreqs, this.Ntimes, this.Njones)
                     )
                 if this.cal_type == "delay":
                     this.delay_array = np.concatenate(
@@ -2448,13 +2422,7 @@ class UVCal(UVBase):
                         )
                     else:
                         zero_pad = np.zeros(
-                            (
-                                len(anew_inds),
-                                1,
-                                this.Nfreqs,
-                                this.Ntimes,
-                                this.Njones,
-                            )
+                            (len(anew_inds), 1, this.Nfreqs, this.Ntimes, this.Njones)
                         )
                     if this.input_flag_array is not None:
                         this.input_flag_array = np.concatenate(
@@ -2749,22 +2717,14 @@ class UVCal(UVBase):
 
                     if this.total_quality_array is not None and can_combine_tqa:
                         zero_pad = np.zeros(
-                            (
-                                this.quality_array.shape[1],
-                                len(tnew_inds),
-                                this.Njones,
-                            )
+                            (this.quality_array.shape[1], len(tnew_inds), this.Njones)
                         )
                         this.total_quality_array = np.concatenate(
                             [this.total_quality_array, zero_pad], axis=1
                         )[:, order, :]
                     elif other.total_quality_array is not None and can_combine_tqa:
                         zero_pad = np.zeros(
-                            (
-                                this.quality_array.shape[1],
-                                len(tnew_inds),
-                                this.Njones,
-                            )
+                            (this.quality_array.shape[1], len(tnew_inds), this.Njones)
                         )
                         this.total_quality_array = np.zeros(
                             (Nf_tqa, this.Ntimes, this.Njones)
@@ -3262,11 +3222,7 @@ class UVCal(UVBase):
             return this
 
     def __iadd__(
-        self,
-        other,
-        run_check=True,
-        check_extra=True,
-        run_check_acceptability=True,
+        self, other, run_check=True, check_extra=True, run_check_acceptability=True
     ):
         """
         Combine two UVCal objects in place.
@@ -4247,9 +4203,7 @@ class UVCal(UVBase):
                 # can't affect this, so don't need handling for non-tuples
                 dtype_use = expected_type[0]
                 setattr(
-                    uvc,
-                    param,
-                    np.zeros(uvparam.expected_shape(uvc), dtype=dtype_use),
+                    uvc, param, np.zeros(uvparam.expected_shape(uvc), dtype=dtype_use)
                 )
 
         uvc.check()
