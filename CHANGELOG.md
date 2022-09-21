@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Support for selecting on phase center IDs, including on read.
+
+### Fixed
+- Fix a bug where trying to select lsts or lst_ranges on read didn't work for some file
+types.
+
 ## [2.2.12] - 2022-12-07
 
 ### Changed
