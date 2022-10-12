@@ -171,7 +171,7 @@ class FHDCal(UVCal):
 
             self.telescope_location_lat_lon_alt = (latitude, longitude, altitude)
             self.antenna_names = [
-                ant.decode("utf8").strip() for ant in bl_info["TILE_NAMES"][0].tolist()
+                ant.decode("utf8") for ant in bl_info["TILE_NAMES"][0].tolist()
             ]
             if self.telescope_name.lower() == "mwa":
                 self.antenna_names = [
