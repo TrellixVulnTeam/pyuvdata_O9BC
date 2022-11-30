@@ -220,7 +220,7 @@ def get_fhd_layout_info(
     layout_fields.remove("antenna_names")
 
     # make these 0-indexed (rather than one indexed)
-    antenna_numbers = layout["antenna_numbers"][0] - 1
+    antenna_numbers = layout["antenna_numbers"][0]
     layout_fields.remove("antenna_numbers")
 
     Nants_telescope = int(layout["n_antenna"][0])
@@ -229,15 +229,9 @@ def get_fhd_layout_info(
     if telescope_name.lower() == "mwa":
         # check that obs.baseline_info.tile_names match the antenna names
         # this only applies for MWA because the tile_names come from
-        # metafits files
-
-        # tile_names are assumed to be ordered: so their index gives
-        # the antenna number
-        # make an comparison array from antenna_names ordered this way.
-        ant_names = np.zeros((np.max(antenna_numbers) + 1), str).tolist()
-        for index, number in enumerate(antenna_numbers):
-            ant_names[number] = antenna_names[index]
-        if obs_tile_names != ant_names:
+        # metafits files. layout["antenna_names"] comes from the antenna table
+        # in the uvfits file and will be used if no metafits was submitted
+        if obs_tile_names != antenna_names:
             warnings.warn(
                 "tile_names from obs structure does not match "
                 "antenna_names from layout"
@@ -462,7 +456,8 @@ class FHD(UVData):
         if layout_file is None:
             warnings.warn(
                 "No layout file included in file list, "
-                "antenna_postions will not be defined."
+                "antenna_postions will not be defined "
+                "and antenna_names might be incorrect."
             )
         if settings_file is None:
             warnings.warn("No settings file included in file list")
@@ -577,13 +572,17 @@ class FHD(UVData):
 
         # get the stuff FHD read from the antenna table (in layout file)
         if layout_file is not None:
+            # in older FHD versions, incorrect tile names for the mwa
+            # might have been stored in bl_info, so pull the obs_tile_names
+            # and check them against the layout file
             obs_tile_names = [
                 ant.decode("utf8").strip() for ant in bl_info["TILE_NAMES"][0].tolist()
             ]
-            obs_tile_names = [
-                "Tile" + "0" * (3 - len(ant)) + ant for ant in obs_tile_names
-            ]
-
+            # in older FHD versions, tile numbers were stored instead of tile names
+            if self.telescope_name.lower() == "mwa" and obs_tile_names[0][0] != "T":
+                obs_tile_names = [
+                    "Tile" + "0" * (3 - len(ant)) + ant for ant in obs_tile_names
+                ]
             layout_param_dict = get_fhd_layout_info(
                 layout_file,
                 self.telescope_name,
@@ -636,9 +635,10 @@ class FHD(UVData):
         self._set_app_coords_helper()
         # Note that FHD antenna arrays are 1-indexed so we subtract 1
         # to get 0-indexed arrays
-        self.ant_1_array = bl_info["TILE_A"][0] - 1
-        self.ant_2_array = bl_info["TILE_B"][0] - 1
-
+        ind_1_array = bl_info["TILE_A"][0] - 1
+        ind_2_array = bl_info["TILE_B"][0] - 1
+        self.ant_1_array = self.antenna_numbers[ind_1_array]
+        self.ant_2_array = self.antenna_numbers[ind_2_array]
         self.Nants_data = int(np.union1d(self.ant_1_array, self.ant_2_array).size)
 
         self.baseline_array = self.antnums_to_baseline(
