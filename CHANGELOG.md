@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Bugs in `UVBeam.read_cst_beam()` related to non-standard CST output text files.
+  Fix adds new parameter `swap_thetaphi_conventions` that swaps theta and phi, along
+  with a check that will suggest setting this parameter if reading fails in a specific
+  way. It also fixes a potential bug in which the input phi can be from -180 to 180
+  instead of 0 to 360. Does not change any behaviour for existing "normal" files.
 ## [2.2.11] - 2022-11-30
 
 ### Added
