@@ -3895,6 +3895,7 @@ class UVBeam(UVBase):
         run_check_acceptability=True,
         check_auto_power=True,
         fix_auto_power=True,
+        swap_thetaphi_conventions: bool = False,
     ):
         """
         Read in data from a cst file.
@@ -4194,6 +4195,7 @@ class UVBeam(UVBase):
                 run_check_acceptability=run_check_acceptability,
                 check_auto_power=check_auto_power,
                 fix_auto_power=fix_auto_power,
+                swap_thetaphi_conventions=swap_thetaphi_conventions,
             )
             for file_i, f in enumerate(cst_filename[1:]):
                 if isinstance(f, (list, tuple)):
@@ -4231,6 +4233,7 @@ class UVBeam(UVBase):
                     run_check_acceptability=run_check_acceptability,
                     check_auto_power=check_auto_power,
                     fix_auto_power=fix_auto_power,
+                    swap_thetaphi_conventions=swap_thetaphi_conventions,
                 )
                 self += beam2
             if len(cst_filename) > 1:
@@ -4264,6 +4267,7 @@ class UVBeam(UVBase):
                 run_check_acceptability=run_check_acceptability,
                 check_auto_power=check_auto_power,
                 fix_auto_power=fix_auto_power,
+                swap_thetaphi_conventions=swap_thetaphi_conventions,
             )
             self._convert_from_filetype(cst_beam_obj)
             del cst_beam_obj
